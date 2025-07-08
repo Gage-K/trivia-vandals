@@ -1,6 +1,7 @@
 import * as diff from "fast-diff";
 import { CRDTDocument } from "../utils/crdt.ts";
 import { useMemo } from "react";
+import { useWebSocketSync } from "../hooks/useWebSocket.tsx";
 
 export default function Document(props: { agent: string }) {
   const { agent } = props;
@@ -8,6 +9,8 @@ export default function Document(props: { agent: string }) {
   const doc = useMemo(() => {
     return new CRDTDocument(agent);
   }, [agent]);
+
+  const { sendUpdate } = useWebSocketSync(doc);
 
   function onDocChange(e) {
     const newText = e.target.value;
@@ -28,6 +31,7 @@ export default function Document(props: { agent: string }) {
       pos += content.length;
     }
     console.log(doc.getString());
+    sendUpdate();
   }
 
   return (
