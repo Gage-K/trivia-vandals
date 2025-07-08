@@ -15,7 +15,7 @@ export type Doc = {
   version: Version;
 };
 
-export function createDoc(): Doc {
+function createDoc(): Doc {
   return {
     content: [],
     version: {},
@@ -39,7 +39,7 @@ function getContent(doc: Doc): string {
 const findItemAtPos = (
   doc: Doc,
   pos: number,
-  stick_end: boolean = false
+  stick_end: boolean = false,
 ): number => {
   // QUESTION: stick end important????
   let i = 0;
@@ -53,7 +53,10 @@ const findItemAtPos = (
   }
 
   if (pos === 0) return i;
-  else throw Error("past end of the document");
+  else {
+    console.log("pos:", pos);
+    throw Error("past end of the document");
+  }
 };
 
 function localInsertOne(doc: Doc, agent: string, pos: number, text: string) {
@@ -72,7 +75,7 @@ export function localInsert(
   doc: Doc,
   agent: string,
   pos: number,
-  text: string
+  text: string,
 ) {
   const content = [...text];
   for (const c of content) {
@@ -85,7 +88,7 @@ function remoteInsert(doc: Doc, item: Item) {
   integrate(doc, item);
 }
 
-export function localDelete(doc: Doc, pos: number, delLen: number) {
+function localDelete(doc: Doc, pos: number, delLen: number) {
   while (delLen > 0) {
     const idx = findItemAtPos(doc, pos, false);
     doc.content[idx].deleted = true;
@@ -207,7 +210,7 @@ function canInsertNow(item: Item, doc: Doc): boolean {
   );
 }
 
-export function mergeInto(dest: Doc, src: Doc) {
+function mergeInto(dest: Doc, src: Doc) {
   // // TODO: store list of thigns that are seen, things that have been deleted, etc
   // // so we can do something like
   // for (const item of src.content) {
@@ -216,7 +219,7 @@ export function mergeInto(dest: Doc, src: Doc) {
   // }
 
   const missing: (Item | null)[] = src.content.filter(
-    (item) => !isInVersion(item.id, dest.version)
+    (item) => !isInVersion(item.id, dest.version),
   );
   let remaining = missing.length;
 
@@ -259,6 +262,68 @@ export function mergeInto(dest: Doc, src: Doc) {
   }
 }
 
+export class CRDTDocument {
+  inner: Doc;
+  agent: string;
+
+  constructor(agent: string) {
+    this.inner = createDoc();
+    this.agent = agent;
+  }
+
+  ins(pos: number, text: string) {
+    localInsert(this.inner, this.agent, pos, text);
+  }
+
+  del(pos: number, delLen: number) {
+    localDelete(this.inner, pos, delLen);
+  }
+
+  getString() {
+    return getContent(this.inner);
+  }
+
+  mergeFrom(other: CRDTDocument) {
+    mergeInto(this.inner, other.inner);
+  }
+
+  reset() {
+    this.inner = createDoc();
+  }
+}
+
+// const doc1 = createDoc()
+// const doc2 = createDoc()
+
+// localInsert(doc1, 'a', 0, 'A')
+// localInsert(doc2, 'b', 0, 'B')
+
+// mergeInto(doc1, doc2)
+// mergeInto(doc2, doc1)
+
+// console.log('doc1 has content', getContent(doc1))
+// console.log('doc2 has content', getContent(doc2))
+
+// localDelete(doc1, 0, 1)
+// console.log('doc1 has content', getContent(doc1))
+
+// mergeInto(doc2, doc1)
+// console.log('doc2 has content', getContent(doc2))
+
+// console.table(doc2.content)
+
+// localInsertOne(doc1, 'seph', 0, 'a')
+// mergeInto(doc2, doc1)
+
+// localInsertOne(doc1, 'seph', 1, 'b')
+// localInsertOne(doc1, 'seph', 0, 'c')
+// console.log('doc1 has content', getContent(doc1))
+// console.table(doc1.content)
+
+// mergeInto(doc2, doc1)
+// console.log('doc2 has content', getContent(doc2))
+
+// console.table(doc2.content)
 // const doc1 = createDoc();
 // const doc2 = createDoc();
 //
