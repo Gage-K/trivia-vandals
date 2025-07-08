@@ -8,11 +8,9 @@ import { useEffect, useRef } from "react";
  * @returns A function that receives a request to modify document and transfers document to subscribed clients
  */
 
-import { type Doc } from "../utils/crdt";
+import { type CRDTDocument } from "../utils/crdt";
 
-import { mergeInto } from "../utils/crdt";
-
-export function useWebSocketSync(myDoc: Doc) {
+export function useWebSocketSync(myDoc: CRDTDocument) {
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
@@ -25,8 +23,8 @@ export function useWebSocketSync(myDoc: Doc) {
     ws.onmessage = (event) => {
       try {
         const response = JSON.parse(event.data);
-        const incomingDoc: Doc = response;
-        mergeInto(myDoc, incomingDoc);
+        const incomingDoc: CRDTDocument = response;
+        myDoc.mergeFrom(incomingDoc);
       } catch (err) {
         console.error("[WebSocket] Data retrieval failed:", err);
       }
