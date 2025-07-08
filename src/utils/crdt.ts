@@ -10,7 +10,7 @@ type Item = {
 
 type Version = Record<string, number>;
 
-type Doc = {
+export type Doc = {
   content: Item[];
   version: Version;
 };
@@ -39,7 +39,7 @@ function getContent(doc: Doc): string {
 const findItemAtPos = (
   doc: Doc,
   pos: number,
-  stick_end: boolean = false,
+  stick_end: boolean = false
 ): number => {
   // QUESTION: stick end important????
   let i = 0;
@@ -72,7 +72,7 @@ export function localInsert(
   doc: Doc,
   agent: string,
   pos: number,
-  text: string,
+  text: string
 ) {
   const content = [...text];
   for (const c of content) {
@@ -216,7 +216,7 @@ export function mergeInto(dest: Doc, src: Doc) {
   // }
 
   const missing: (Item | null)[] = src.content.filter(
-    (item) => !isInVersion(item.id, dest.version),
+    (item) => !isInVersion(item.id, dest.version)
   );
   let remaining = missing.length;
 
