@@ -8,9 +8,22 @@
 .Document {
   display: flex;
   flex-direction: column;
+  margin: 12px;
+}
+
+.divider {
+  margin: 24px;
+  width: 1px;
+  height: 200px;
+  background-color: grey;
 }
 
 textarea {
   width: 100%;
   height: 8em;
+}
+
+.text-boxes {
+  display: flex;
+  flex-direction: row;
 }

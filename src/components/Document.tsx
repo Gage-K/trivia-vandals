@@ -10,33 +10,25 @@ export default function Document(props: { agent: string }) {
   }, [agent]);
 
   function onDocChange(e) {
-    // const newText = e.target.value;
-    // const resultDiff = diff.default(doc.getString(), newText);
-
     const newText = e.target.value;
-    // console.log(newText);
     const resultDiff = diff.default(doc.getString(), newText);
-    // console.log(resultDiff);
 
     let pos = 0;
     while (resultDiff.length > 0) {
       const [operation, content] = resultDiff.shift();
-      // console.log(operation, content);
       if (operation === 0) {
-        // console.log("keep");
+        // KEEP
       } else if (operation === -1) {
-        // console.log("delete: ", content, "at position:", pos);
+        // DELETE
         doc.del(pos, content.length);
       } else if (operation === 1) {
-        // console.log("insert");
+        // INSERT
         doc.ins(pos, content);
       }
       pos += content.length;
-      // console.log("doc:", doc.getString());
     }
+    console.log(doc.getString());
   }
-
-  // useEffect(() => {}, []);
 
   return (
     <div className={"Document"}>
@@ -44,11 +36,6 @@ export default function Document(props: { agent: string }) {
       <form>
         <textarea onChange={onDocChange} />
         <br />
-        <div className={"button-container"}>
-          <button onClick={() => mergeInto()}>mergeInto</button>
-          <button onClick={() => localDelete()}>localDelete</button>
-          <button onClick={() => localInsert()}>localInsert</button>
-        </div>
       </form>
     </div>
   );

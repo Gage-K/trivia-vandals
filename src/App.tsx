@@ -5,8 +5,11 @@ function App() {
   return (
     <>
       <h1>Trivia Vandals</h1>
-      <Document agent="a" />
-      <Document agent="b" />
+      <div className={"text-boxes"}>
+        <Document agent="a" />
+        <div className="divider"></div>
+        <Document agent="b" />
+      </div>
     </>
   );
 }
