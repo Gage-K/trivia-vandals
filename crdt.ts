@@ -39,7 +39,7 @@ function getContent(doc: Doc): string {
 const findItemAtPos = (
   doc: Doc,
   pos: number,
-  stick_end: boolean = false
+  stick_end: boolean = false,
 ): number => {
   // QUESTION: stick end important????
   let i = 0;
@@ -211,7 +211,7 @@ function mergeInto(dest: Doc, src: Doc) {
   // }
 
   const missing: (Item | null)[] = src.content.filter(
-    (item) => !isInVersion(item.id, dest.version)
+    (item) => !isInVersion(item.id, dest.version),
   );
   let remaining = missing.length;
 
@@ -274,9 +274,25 @@ console.log("doc2 has content", getContent(doc2));
 
 console.table(doc2.content);
 
+localInsert(doc2, "b", 1, "C");
+console.table(doc2.content);
+console.log("doc1 has content", getContent(doc1));
+console.log("doc2 has content", getContent(doc2));
+mergeInto(doc1, doc2);
+console.log("doc1 has content", getContent(doc1));
+console.log("doc2 has content", getContent(doc2));
+console.table(doc1.content);
+localInsert(doc2, "b", 2, "WHP");
+console.table(doc2.content);
+console.log("doc2 has content", getContent(doc2));
+localDelete(doc2, 0, 2);
+console.table(doc2.content);
+// console.log("doc2 has content", getContent(doc2));
+mergeInto(doc1, doc2);
+console.log("doc1 has content", getContent(doc1));
+
 // localInsertOne(doc1, "seph", 0, "a");
 // mergeInto(doc2, doc1);
-
 // localInsertOne(doc1, "seph", 1, "b");
 // localInsertOne(doc1, "seph", 0, "c");
 // console.log("doc1 has content", getContent(doc1));
