@@ -39,7 +39,7 @@ function getContent(doc: Doc): string {
 const findItemAtPos = (
   doc: Doc,
   pos: number,
-  stick_end: boolean = false,
+  stick_end: boolean = false
 ): number => {
   // QUESTION: stick end important????
   let i = 0;
@@ -75,7 +75,7 @@ export function localInsert(
   doc: Doc,
   agent: string,
   pos: number,
-  text: string,
+  text: string
 ) {
   const content = [...text];
   for (const c of content) {
@@ -120,9 +120,9 @@ function integrate(doc: Doc, newItem: Item) {
   doc.version[agent] = seq;
 
   // add new item into doc at the right location
-  let left = findItemIdxAtId(doc, newItem.originLeft) ?? -1;
+  const left = findItemIdxAtId(doc, newItem.originLeft) ?? -1;
   let destIdx = left + 1;
-  let right =
+  const right =
     newItem.originRight == null
       ? doc.content.length
       : findItemIdxAtId(doc, newItem.originRight)!;
@@ -134,10 +134,10 @@ function integrate(doc: Doc, newItem: Item) {
     if (i === doc.content.length) break;
     if (i === right) break; // no ambiguity / concurrency, insert here
 
-    let other = doc.content[i];
+    const other = doc.content[i];
 
-    let oleft = findItemIdxAtId(doc, other.originLeft) ?? -1;
-    let oright =
+    const oleft = findItemIdxAtId(doc, other.originLeft) ?? -1;
+    const oright =
       other.originRight == null
         ? doc.content.length
         : findItemIdxAtId(doc, other.originRight)!;
@@ -210,7 +210,7 @@ function canInsertNow(item: Item, doc: Doc): boolean {
   );
 }
 
-function mergeInto(dest: Doc, src: Doc) {
+export function mergeInto(dest: Doc, src: Doc) {
   // // TODO: store list of thigns that are seen, things that have been deleted, etc
   // // so we can do something like
   // for (const item of src.content) {
@@ -219,7 +219,7 @@ function mergeInto(dest: Doc, src: Doc) {
   // }
 
   const missing: (Item | null)[] = src.content.filter(
-    (item) => !isInVersion(item.id, dest.version),
+    (item) => !isInVersion(item.id, dest.version)
   );
   let remaining = missing.length;
 
