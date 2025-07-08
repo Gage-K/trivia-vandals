@@ -15,7 +15,7 @@ type Doc = {
   version: Version;
 };
 
-function createDoc(): Doc {
+export function createDoc(): Doc {
   return {
     content: [],
     version: {},
@@ -68,7 +68,12 @@ function localInsertOne(doc: Doc, agent: string, pos: number, text: string) {
   });
 }
 
-function localInsert(doc: Doc, agent: string, pos: number, text: string) {
+export function localInsert(
+  doc: Doc,
+  agent: string,
+  pos: number,
+  text: string,
+) {
   const content = [...text];
   for (const c of content) {
     localInsertOne(doc, agent, pos, c);
@@ -80,7 +85,7 @@ function remoteInsert(doc: Doc, item: Item) {
   integrate(doc, item);
 }
 
-function localDelete(doc: Doc, pos: number, delLen: number) {
+export function localDelete(doc: Doc, pos: number, delLen: number) {
   while (delLen > 0) {
     const idx = findItemAtPos(doc, pos, false);
     doc.content[idx].deleted = true;
@@ -202,7 +207,7 @@ function canInsertNow(item: Item, doc: Doc): boolean {
   );
 }
 
-function mergeInto(dest: Doc, src: Doc) {
+export function mergeInto(dest: Doc, src: Doc) {
   // // TODO: store list of thigns that are seen, things that have been deleted, etc
   // // so we can do something like
   // for (const item of src.content) {
