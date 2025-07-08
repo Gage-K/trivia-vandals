@@ -16,7 +16,8 @@ export function useWebSocketSync(myDoc: Doc) {
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:8080"); // adjust port as needed
+    // TODO: make port an environment variable
+    const ws = new WebSocket("ws://localhost:8080");
     wsRef.current = ws;
 
     ws.onopen = () => console.log("[WebSocket] Connected");
