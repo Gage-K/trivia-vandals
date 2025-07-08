@@ -259,42 +259,42 @@ export function mergeInto(dest: Doc, src: Doc) {
   }
 }
 
-const doc1 = createDoc();
-const doc2 = createDoc();
-
-localInsert(doc1, "a", 0, "A");
-localInsert(doc2, "b", 0, "B");
-
-mergeInto(doc1, doc2);
-mergeInto(doc2, doc1);
-
-console.log("doc1 has content", getContent(doc1));
-console.log("doc2 has content", getContent(doc2));
-
-localDelete(doc1, 0, 1);
-console.log("doc1 has content", getContent(doc1));
-
-mergeInto(doc2, doc1);
-console.log("doc2 has content", getContent(doc2));
-
-console.table(doc2.content);
-
-localInsert(doc2, "b", 1, "C");
-console.table(doc2.content);
-console.log("doc1 has content", getContent(doc1));
-console.log("doc2 has content", getContent(doc2));
-mergeInto(doc1, doc2);
-console.log("doc1 has content", getContent(doc1));
-console.log("doc2 has content", getContent(doc2));
-console.table(doc1.content);
-localInsert(doc2, "b", 2, "WHP");
-console.table(doc2.content);
-console.log("doc2 has content", getContent(doc2));
-localDelete(doc2, 0, 2);
-console.table(doc2.content);
+// const doc1 = createDoc();
+// const doc2 = createDoc();
+//
+// localInsert(doc1, "a", 0, "A");
+// localInsert(doc2, "b", 0, "B");
+//
+// mergeInto(doc1, doc2);
+// mergeInto(doc2, doc1);
+//
+// console.log("doc1 has content", getContent(doc1));
 // console.log("doc2 has content", getContent(doc2));
-mergeInto(doc1, doc2);
-console.log("doc1 has content", getContent(doc1));
+//
+// localDelete(doc1, 0, 1);
+// console.log("doc1 has content", getContent(doc1));
+//
+// mergeInto(doc2, doc1);
+// console.log("doc2 has content", getContent(doc2));
+//
+// console.table(doc2.content);
+//
+// localInsert(doc2, "b", 1, "C");
+// console.table(doc2.content);
+// console.log("doc1 has content", getContent(doc1));
+// console.log("doc2 has content", getContent(doc2));
+// mergeInto(doc1, doc2);
+// console.log("doc1 has content", getContent(doc1));
+// console.log("doc2 has content", getContent(doc2));
+// console.table(doc1.content);
+// localInsert(doc2, "b", 2, "WHP");
+// console.table(doc2.content);
+// console.log("doc2 has content", getContent(doc2));
+// localDelete(doc2, 0, 2);
+// console.table(doc2.content);
+// // console.log("doc2 has content", getContent(doc2));
+// mergeInto(doc1, doc2);
+// console.log("doc1 has content", getContent(doc1));
 
 // localInsertOne(doc1, "seph", 0, "a");
 // mergeInto(doc2, doc1);
