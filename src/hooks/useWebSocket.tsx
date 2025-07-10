@@ -10,10 +10,7 @@ import { CRDTDocument } from "../utils/crdt";
  */
 export function useWebSocketSync(myDoc: CRDTDocument) {
   const wsRef = useRef<WebSocket | null>(null);
-  const docRef = useRef(myDoc);
-  const isUpdatingRef = useRef(false);
-
-  docRef.current = myDoc;
+  // const isUpdatingRef = useRef(false); // is necessary?
 
   useEffect(() => {
     let ws: WebSocket | null = null;
@@ -34,22 +31,24 @@ export function useWebSocketSync(myDoc: CRDTDocument) {
 
         ws.onmessage = (event) => {
           try {
-            if (isUpdatingRef.current) return;
+            // if (isUpdatingRef.current) return;
 
+            // TODO: make some way to ensure that this response type is a CRDTDocument
             const response = JSON.parse(event.data);
+            console.log("here is the response", response);
             if (response.agent === myDoc.agent) return;
             console.log(
               `[WebSocket] ${myDoc.agent} received remote update from ${response.agent}:`,
               response
             );
 
-            isUpdatingRef.current = true;
-            const tempDoc = new CRDTDocument(response.agent || "unknown");
-            tempDoc.inner = response;
-            docRef.current.mergeFrom(tempDoc);
+            const tempDoc = new CRDTDocument(response.agent || "unknown agent");
+            tempDoc.inner = response.inner;
+            console.log("this is tempdoc", tempDoc);
+            myDoc.mergeFrom(tempDoc);
 
-            console.log("Here is the new doc", docRef.current);
-            isUpdatingRef.current = false;
+            console.log("Here is the new doc", myDoc.inner);
+            // isUpdatingRef.current = false;
           } catch (err) {
             console.error("[WebSocket] Data retrieval failed:", err);
           }
@@ -77,15 +76,15 @@ export function useWebSocketSync(myDoc: CRDTDocument) {
     };
   }, []);
 
-  const sendUpdate = () => {
+  const sendUpdate = (doc: CRDTDocument) => {
     if (
-      wsRef.current?.readyState === WebSocket.OPEN &&
-      !isUpdatingRef.current
+      wsRef.current?.readyState === WebSocket.OPEN
+      // && !isUpdatingRef.current
     ) {
       try {
-        const serializedDoc = JSON.stringify(docRef.current.inner);
+        const serializedDoc = JSON.stringify(doc);
         wsRef.current.send(serializedDoc);
-        console.log(`[WebSocket] ${myDoc.agent} sent update`);
+        console.log(`[WebSocket] ${doc.agent} sent update`);
       } catch (error) {
         console.error("[WebSocket] Failed to send update:", error);
       }
