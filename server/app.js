@@ -10,6 +10,7 @@ wss.on("connection", (ws) => {
     console.log("[Server] Received:", message.toString());
     wss.clients.forEach((client) => {
       if (client !== ws && client.readyState === client.OPEN) {
+        console.log("[Server] Sent message to", client);
         client.send(message.toString());
       }
     });
