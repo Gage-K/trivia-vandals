@@ -1,51 +1,53 @@
-import diff from "fast-diff";
 import { CRDTDocument } from "../utils/crdt.ts";
-import { useMemo } from "react";
-import { useWebSocketSync } from "../hooks/useWebSocket.tsx";
+import { useMemo, useRef, useState, useCallback } from "react";
+import { useWebSocketSync } from "../hooks/useWebSocketSync.tsx";
+import calcDiff from "../utils/diff.ts";
 
 export default function Document(props: { agent: string }) {
   const { agent } = props;
+  const [text, setText] = useState("");
 
   const doc = useMemo(() => {
     return new CRDTDocument(agent);
   }, [agent]);
 
-  const { sendUpdate } = useWebSocketSync(doc);
+  const oldText = useRef<string>(doc.getString());
 
-  function onDocChange(e) {
-    const newText = e.target.value;
-    const resultDiff = diff(doc.getString(), newText);
-
-    let pos = 0;
-
-    while (resultDiff.length > 0) {
-      const [operation, content] = resultDiff.shift();
-      if (operation === 0) {
-        pos += content.length;
-        // KEEP
-      } else if (operation === -1) {
-        // DELETE
-        doc.del(pos, content.length);
-        let tempContent = content;
-        while (pos > 0 && tempContent.length > 0) {
-          pos--;
-          tempContent = tempContent.subString(1);
-        }
-      } else if (operation === 1) {
-        // INSERT
-        doc.ins(pos, content);
-        pos += content.length;
-      }
-    }
-    console.log(doc.getString());
+  function onDocChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const newText: string = e.target.value.replace(/\r\n/g, "\n"); // standardizes line breaks for all OSs
+    const { pos, del, ins } = calcDiff(oldText.current, newText);
+    if (del > 0) doc.del(pos, del);
+    if (ins !== "") doc.ins(pos, ins);
     sendUpdate(doc);
+    oldText.current = newText;
+    setText(newText);
   }
+
+  const handleRemoteUpdate = useCallback(() => {
+    const newText = doc.getString();
+    setText(newText);
+    oldText.current = newText;
+  }, [doc]);
+
+  const { sendUpdate, myDoc } = useWebSocketSync(doc, handleRemoteUpdate);
+
+  /*
+  We need to have some onRemoteUpdate function that gets called when a remote change is received
+  pass this into the useWebSocketSync hook
+  When remote update arrives, component should update its local text state and old text ref to match merged document
+  isUpdatingFromRemote flag can help prevent handling onChange events triggered by our own remote updates
+
+  User types --> onDocChange --> apply to CRDT --> send to WebSocket --> update local state
+  WebSocket receives --> merge into CRDT --> trigger onRemoteUpdate --> update local state
+  */
+
+  console.log(`client ${doc.agent}`, myDoc);
 
   return (
     <div className={"Document"}>
       <h2>Hi mom! I'm a documenet</h2>
       <form>
-        <textarea onChange={onDocChange} />
+        <textarea onChange={onDocChange} value={text}></textarea>
         <br />
       </form>
     </div>
