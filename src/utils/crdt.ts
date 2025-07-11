@@ -1,5 +1,16 @@
+/**
+ * Represents the ID of an item (i.e., a single character) in the document
+ */
 type Id = [agent: string, seq: number];
 
+/**
+ * Represents the metadata of an item (i.e., a single character) in the document.
+ * @property content - the character itself
+ * @property id - the ID metadata associated with the item
+ * @property originLeft - the ID of the item to the left of the current item at time of insertion
+ * @property originRight - the ID of the item to the right of the current item at time of insertion
+ * @property deleted - whether the item has been deleted
+ */
 type Item = {
   content: string; // 1 char
   id: Id;
@@ -8,13 +19,25 @@ type Item = {
   deleted: boolean;
 };
 
+/**
+ * Represents the version of the document for each agent
+ */
 type Version = Record<string, number>;
 
+/**
+ * Represents the document itself
+ * @property content - the list of Items in the document
+ * @property version - the Version of the document for each agent
+ */
 export type Doc = {
   content: Item[];
   version: Version;
 };
 
+/**
+ * Creates a new Document
+ * @returns A new Doc object
+ */
 function createDoc(): Doc {
   return {
     content: [],
@@ -22,11 +45,12 @@ function createDoc(): Doc {
   };
 }
 
+/**
+ * Gets the content of the document as a string, filtering out deleted items
+ * @param doc - The document to get the content of
+ * @returns The content of the document as a string
+ */
 function getContent(doc: Doc): string {
-  // return doc.content.filter(item => !item.deleted)
-  //   .map(item => item.content)
-  //   .join('')
-
   let content = "";
   for (const item of doc.content) {
     if (!item.deleted) {
@@ -36,12 +60,19 @@ function getContent(doc: Doc): string {
   return content;
 }
 
+/**
+ * Finds the item at a given position in the document
+ * @param doc - The document to find the item in
+ * @param pos - The position to find the item at
+ * @param stick_end - Whether to stick to the end of the document
+ * @returns The index of the item at the given position
+ */
 const findItemAtPos = (
   doc: Doc,
   pos: number,
   stick_end: boolean = false
 ): number => {
-  // QUESTION: stick end important????
+  // TODO: fix the naming convention of stick_end
   let i = 0;
 
   for (; i < doc.content.length; i++) {
@@ -59,9 +90,18 @@ const findItemAtPos = (
   }
 };
 
+/**
+ * Inserts a single character into the document
+ * @param doc - The document to insert the character into
+ * @param agent - The agent inserting the character
+ * @param pos - The position to insert the character at
+ * @param text - The character to insert
+ */
 function localInsertOne(doc: Doc, agent: string, pos: number, text: string) {
   const idx = findItemAtPos(doc, pos, true);
   const seq = (doc.version[agent] ?? -1) + 1;
+
+  // Integrates the new item into the document with all of the necessary metadata
   integrate(doc, {
     content: text,
     id: [agent, seq],
@@ -71,23 +111,44 @@ function localInsertOne(doc: Doc, agent: string, pos: number, text: string) {
   });
 }
 
+/**
+ * Inserts an item into the document from a local agent
+ * @param doc - The document to insert the string into
+ * @param agent - The agent inserting the string
+ * @param pos - The position to insert the string at
+ * @param text - The string to insert
+ */
 export function localInsert(
   doc: Doc,
   agent: string,
   pos: number,
   text: string
 ) {
+  // Turn single content string into an array of characters
   const content = [...text];
+
+  // loop through each character in the string and insert it into the document
   for (const c of content) {
     localInsertOne(doc, agent, pos, c);
     pos++;
   }
 }
 
+/**
+ * Inserts an item into the document from a remote agent
+ * @param doc - The document to insert the item into
+ * @param item - The item to insert
+ */
 function remoteInsert(doc: Doc, item: Item) {
   integrate(doc, item);
 }
 
+/**
+ * Deletes a range of characters from the document
+ * @param doc - The document to delete the characters from
+ * @param pos - The position to start deleting from
+ * @param delLen - The number of characters to delete
+ */
 function localDelete(doc: Doc, pos: number, delLen: number) {
   while (delLen > 0) {
     const idx = findItemAtPos(doc, pos, false);
@@ -96,19 +157,41 @@ function localDelete(doc: Doc, pos: number, delLen: number) {
   }
 }
 
+/**
+ * Checks if two IDs are equal
+ * @param a - The first ID
+ * @param b - The second ID
+ * @returns True if the IDs are equal, false otherwise
+ */
 const idEq = (a: Id | null, b: Id | null): boolean =>
+  // TODO: naming convention is a bit confusing
   a == b || (a !== null && b !== null && a[0] === b[0] && a[1] === b[1]);
 
+/**
+ * Finds the index of an item in the document by its ID
+ * @param doc - The document to find the item in
+ * @param id - The ID of the item to find
+ * @returns The index of the item in the document, or null if the item is not found
+ */
 function findItemIdxAtId(doc: Doc, id: Id | null): number | null {
+  // Validate that the ID is not null
   if (id == null) return null;
 
+  // Loop through the document and check if the ID of the item matches the ID we're looking for
+  // If it does, return the index of the item
   for (let i = 0; i < doc.content.length; i++) {
     if (idEq(doc.content[i].id, id)) return i;
   }
 
-  throw Error("can't find item");
+  // If the item is not found, throw an error
+  throw Error(`Item with id ${id} cannot be found in document`);
 }
 
+/**
+ * Integrates a new item into the document
+ * @param doc - The document to integrate the item into
+ * @param newItem - The item to integrate into the document
+ */
 function integrate(doc: Doc, newItem: Item) {
   const [agent, seq] = newItem.id;
   const lastSeen = doc.version[agent] ?? -1;
@@ -149,39 +232,18 @@ function integrate(doc: Doc, newItem: Item) {
     )
       break;
     if (oleft === left) scanning = oright < right;
-
-    // This is the same code as the above 2 lines, but written out the long way:
-    //   if (oleft < left) {
-    //     // Top row. Insert, insert, arbitrary (insert)
-    //     break;
-    //   } else if (oleft === left) {
-    //     // Middle row.
-    //     if (oright < right) {
-    //       // This is tricky. We're looking at an item we *might* insert after - but we can't tell yet!
-    //       scanning = true;
-    //       continue;
-    //     } else if (oright === right) {
-    //       // Raw conflict. Order based on user agents.
-    //       if (newItem.id[0] < other.id[0]) break;
-    //       else {
-    //         scanning = false;
-    //         continue;
-    //       }
-    //     } else {
-    //       // oright > right
-    //       scanning = false;
-    //       continue;
-    //     }
-    //   } else {
-    //     // oleft > left
-    //     // Bottom row. Arbitrary (skip), skip, skip
-    //     continue;
-    //   }
   }
   doc.content.splice(destIdx, 0, newItem);
 }
 
+/**
+ * Checks if an item is in the version of the document
+ * @param id - The ID of the item to check
+ * @param version - The version of the document to check
+ * @returns True if the item is in the version, false otherwise
+ */
 function isInVersion(id: Id | null, version: Version): boolean {
+  // ID Validation
   if (id === null) {
     return true;
   }
@@ -193,13 +255,11 @@ function isInVersion(id: Id | null, version: Version): boolean {
     // We've seen this version already
     return highestSeq >= seq;
   }
-
-  // return highestSeq != null && highestSeq >= seq
 }
 
 function canInsertNow(item: Item, doc: Doc): boolean {
-  // WE need item id to not be in doc.versions, but originLeft and originRight to be in
-  // We're also inserting each item from each agen in sequence.
+  // We need item ID to *not* be in doc version, but originLeft and originRight should be in doc version
+  // We're also inserting each item from each agent in sequence
 
   const [agent, seq] = item.id;
   return (
@@ -210,23 +270,25 @@ function canInsertNow(item: Item, doc: Doc): boolean {
   );
 }
 
+/**
+ * Merges a source document into a destination document. Loops through source document and inserts items into destination document if they are not already in the destination document.
+ * @param dest - The destination document to merge into
+ * @param src - The source document to merge from
+ */
 export function mergeInto(dest: Doc, src: Doc) {
-  // // TODO: store list of thigns that are seen, things that have been deleted, etc
-  // // so we can do something like
-  // for (const item of src.content) {
-  //   // if not exists in doc or doesn't have equiv origins
-  //   remoteInsert(dest, item);
-  // }
-
   const missing: (Item | null)[] = src.content.filter(
     (item) => !isInVersion(item.id, dest.version)
   );
+
+  // Keeps track of the number of items that have not been examined to be merged yet
   let remaining = missing.length;
 
+  // Loop through the remaining items and insert them into the destination document
   while (remaining > 0) {
     // Find the next item in remaining and insert it.
     let mergedOnThisPass = 0;
 
+    // Loop through the remaining items and insert them into the destination document
     for (let i = 0; i < missing.length; i++) {
       const item = missing[i];
       if (item === null) continue;
@@ -262,6 +324,16 @@ export function mergeInto(dest: Doc, src: Doc) {
   }
 }
 
+/**
+ * Represents a CRDT Document
+ * @property inner - The Doc object itself
+ * @property agent - The agent associated with the document
+ * @method ins - Inserts a string into the document
+ * @method del - Deletes a range of characters from the document
+ * @method getString - Gets the content of the document as a string
+ * @method mergeFrom - Merges another CRDTDocument into the current document
+ * @method reset - Resets the document to its initial state
+ */
 export class CRDTDocument {
   inner: Doc;
   agent: string;
@@ -291,84 +363,3 @@ export class CRDTDocument {
     this.inner = createDoc();
   }
 }
-
-// const doc1 = createDoc()
-// const doc2 = createDoc()
-
-// localInsert(doc1, 'a', 0, 'A')
-// localInsert(doc2, 'b', 0, 'B')
-
-// mergeInto(doc1, doc2)
-// mergeInto(doc2, doc1)
-
-// console.log('doc1 has content', getContent(doc1))
-// console.log('doc2 has content', getContent(doc2))
-
-// localDelete(doc1, 0, 1)
-// console.log('doc1 has content', getContent(doc1))
-
-// mergeInto(doc2, doc1)
-// console.log('doc2 has content', getContent(doc2))
-
-// console.table(doc2.content)
-
-// localInsertOne(doc1, 'seph', 0, 'a')
-// mergeInto(doc2, doc1)
-
-// localInsertOne(doc1, 'seph', 1, 'b')
-// localInsertOne(doc1, 'seph', 0, 'c')
-// console.log('doc1 has content', getContent(doc1))
-// console.table(doc1.content)
-
-// mergeInto(doc2, doc1)
-// console.log('doc2 has content', getContent(doc2))
-
-// console.table(doc2.content)
-// const doc1 = createDoc();
-// const doc2 = createDoc();
-//
-// localInsert(doc1, "a", 0, "A");
-// localInsert(doc2, "b", 0, "B");
-//
-// mergeInto(doc1, doc2);
-// mergeInto(doc2, doc1);
-//
-// console.log("doc1 has content", getContent(doc1));
-// console.log("doc2 has content", getContent(doc2));
-//
-// localDelete(doc1, 0, 1);
-// console.log("doc1 has content", getContent(doc1));
-//
-// mergeInto(doc2, doc1);
-// console.log("doc2 has content", getContent(doc2));
-//
-// console.table(doc2.content);
-//
-// localInsert(doc2, "b", 1, "C");
-// console.table(doc2.content);
-// console.log("doc1 has content", getContent(doc1));
-// console.log("doc2 has content", getContent(doc2));
-// mergeInto(doc1, doc2);
-// console.log("doc1 has content", getContent(doc1));
-// console.log("doc2 has content", getContent(doc2));
-// console.table(doc1.content);
-// localInsert(doc2, "b", 2, "WHP");
-// console.table(doc2.content);
-// console.log("doc2 has content", getContent(doc2));
-// localDelete(doc2, 0, 2);
-// console.table(doc2.content);
-// // console.log("doc2 has content", getContent(doc2));
-// mergeInto(doc1, doc2);
-// console.log("doc1 has content", getContent(doc1));
-
-// localInsertOne(doc1, "seph", 0, "a");
-// mergeInto(doc2, doc1);
-// localInsertOne(doc1, "seph", 1, "b");
-// localInsertOne(doc1, "seph", 0, "c");
-// console.log("doc1 has content", getContent(doc1));
-// console.table(doc1.content);
-
-// mergeInto(doc2, doc1);
-// console.log("doc2 has content", getContent(doc2));
-
-// console.table(doc2.content);

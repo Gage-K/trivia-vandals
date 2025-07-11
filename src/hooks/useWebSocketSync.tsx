@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-// import { type CRDTDocument } from "../utils/crdt";
 import { CRDTDocument } from "../utils/crdt";
 /**
  * Initializes Web Socket connections between clients
@@ -13,11 +12,11 @@ export function useWebSocketSync(
   onRemoteUpdate: () => void
 ) {
   const wsRef = useRef<WebSocket | null>(null);
-  // const isUpdatingRef = useRef(false); // is necessary?
 
   useEffect(() => {
     let ws: WebSocket | null = null;
 
+    // Handles the logic for connecting to the WebSocket server and receiving messages from other clients
     const connect = () => {
       try {
         ws = new WebSocket("ws://localhost:8080");
@@ -32,31 +31,30 @@ export function useWebSocketSync(
           console.error("[WebSocket] Error:", err);
         };
 
+        // Fires when a message (i.e. a CRDTDocument from another client) is received
         ws.onmessage = (event) => {
           try {
-            // if (isUpdatingRef.current) return;
-
-            // TODO: make some way to ensure that this response type is a CRDTDocument
+            // Parse the CRDTDocument from the received message
             const response = JSON.parse(event.data);
-            // console.log("here is the response", response);
-            if (response.agent === myDoc.agent) return;
-            console.log(
-              `[WebSocket] ${myDoc.agent} received remote update from ${response.agent}:`,
-              response
-            );
 
+            // If the received document is from the same agent, do nothing
+            if (response.agent === myDoc.agent) return;
+
+            // Create a new cached CRDTDocument from the received message
             const tempDoc = new CRDTDocument(response.agent || "unknown agent");
             tempDoc.inner = response.inner;
-            // console.log("this is tempdoc", tempDoc);
+
+            // Merge the received document into the local document
             myDoc.mergeFrom(tempDoc);
+
+            // Trigger the onRemoteUpdate function to update the local state
             onRemoteUpdate();
-            // console.log("Here is the new doc", myDoc.inner);
-            // isUpdatingRef.current = false;
           } catch (err) {
             console.error("[WebSocket] Data retrieval failed:", err);
           }
         };
 
+        // Fires in clean up function to close the connection
         ws.onclose = (event) => {
           console.warn(
             "[WebSocket] Connection closed",
@@ -72,21 +70,27 @@ export function useWebSocketSync(
 
     connect();
 
+    // Clean up function to terminate the connection when the component unmounts
     return () => {
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.close(1000, "Component unmounting");
       }
     };
-  }, [myDoc]);
+  }, [myDoc, onRemoteUpdate]);
 
+  /**
+   * Sends the CRDTdocument to the WebSocket server to then be distributed to other clients
+   * @param doc - The local document to send to the WebSocket server
+   */
   const sendUpdate = (doc: CRDTDocument) => {
-    if (
-      wsRef.current?.readyState === WebSocket.OPEN
-      // && !isUpdatingRef.current
-    ) {
+    // Only send the update if the connection is open
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
       try {
+        // Serialize the document to a JSON string
         const serializedDoc = JSON.stringify(doc);
+        // Send the serialized document to the WebSocket server
         wsRef.current.send(serializedDoc);
+        // Log the update to the console
         console.log(`[WebSocket] ${doc.agent} sent update`);
       } catch (error) {
         console.error("[WebSocket] Failed to send update:", error);
@@ -94,5 +98,6 @@ export function useWebSocketSync(
     }
   };
 
-  return { sendUpdate, myDoc };
+  // Return the function to send updates to the WebSocket server from any component
+  return { sendUpdate };
 }
