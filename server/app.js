@@ -9,15 +9,29 @@ wss.on("connection", (ws) => {
   ws.on("message", (message) => {
     console.log("[Server] Received:", message.toString());
     wss.clients.forEach((client) => {
-      client.send(message.toString());
+      if (client !== ws && client.readyState === client.OPEN) {
+        console.log("[Server] Sent message to", client);
+        client.send(message.toString());
+      }
     });
   });
 
   ws.on("close", () => {
     console.log("[Server] Connection closed");
   });
+
+  ws.on("error", (error) => {
+    console.error("[Server] WebSocket error:", error);
+  });
 });
 
 server.listen(8080, () => {
   console.log("[Server] Listening on ws://localhost:8080");
+});
+
+process.on("SIGINT", () => {
+  console.log("[Server] Shutting down...");
+  server.close(() => {
+    process.exit(0);
+  });
 });
